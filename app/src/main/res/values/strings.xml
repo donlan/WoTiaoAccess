@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">五条发现者投票助手</string>
+    <string name="use_tips">使用步骤:\n 1.点击下方按钮开启辅助功能\n 2.进入五条APP的发现者投票页面\n 3.保持本程序的运行（不要关闭退出）</string>
+</resources>
