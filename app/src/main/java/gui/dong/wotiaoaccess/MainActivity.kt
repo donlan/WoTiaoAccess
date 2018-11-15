@@ -32,6 +32,8 @@ class MainActivity : AppCompatActivity() {
         Permission.instance().check({ },this,Collections.singletonList(Manifest.permission.WRITE_EXTERNAL_STORAGE))
         val voteTimeSeekBar = findViewById<SeekBar>(R.id.time_vote_seek)
         val voteTimeTv  = findViewById<TextView>(R.id.vote_time_tv)
+        val videoTimeSeekbar = findViewById<SeekBar>(R.id.video_time_vote_seek)
+        val videoTimeTv = findViewById<TextView>(R.id.video_vote_time_tv)
         voteTimeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
             }
@@ -47,7 +49,21 @@ class MainActivity : AppCompatActivity() {
                 voteTimeTv.text = progress.toString()
             }
         })
+        videoTimeSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+            }
 
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+            }
+
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                getSharedPreferences("wutiao", Context.MODE_PRIVATE)
+                    .edit().putInt("video_vote_time", progress)
+                    .commit()
+                WuTiaoAccessibility.videoVoteTime = progress
+                videoTimeTv.text = progress.toString()
+            }
+        })
         findViewById<ToggleButton>(R.id.vote_auto_mode).setOnCheckedChangeListener { _, isChecked ->
             WuTiaoAccessibility.autoMode = isChecked
         }
@@ -55,6 +71,10 @@ class MainActivity : AppCompatActivity() {
         WuTiaoAccessibility.voteTime = getSharedPreferences("wotiao",Context.MODE_PRIVATE).getInt("vote_time",5)
         voteTimeSeekBar.progress = WuTiaoAccessibility.voteTime
         voteTimeTv.text = WuTiaoAccessibility.voteTime.toString()
+
+        WuTiaoAccessibility.videoVoteTime = getSharedPreferences("wotiao",Context.MODE_PRIVATE).getInt("video_vote_time",5)
+        videoTimeSeekbar.progress = WuTiaoAccessibility.videoVoteTime
+        videoTimeTv.text = WuTiaoAccessibility.videoVoteTime.toString()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

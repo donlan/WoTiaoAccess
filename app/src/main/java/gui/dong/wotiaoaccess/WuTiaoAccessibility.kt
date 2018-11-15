@@ -20,10 +20,13 @@ class WuTiaoAccessibility : AccessibilityService() {
 
     companion object {
         var voteTime = 5
+        var videoVoteTime = 5
+        var isVideo = false
         var autoMode = false
         var inVotePager = false
         var nextHasClick = false
         var currentContentCode = 0
+        var visitCount = 0
         const val codeFinder = 2
         const val codeNext = 3
         const val nextDelayCheck = 4
@@ -35,7 +38,6 @@ class WuTiaoAccessibility : AccessibilityService() {
     private var inCheckShouldVote = false
     private var canVoteClick = false
     private var voteCount = 0
-    private var visitCount = 0
     private var handler: MyHandler? = null
     private var accessTimeGap = 0L
     private var normalNextTime = 3000L
@@ -152,7 +154,7 @@ class WuTiaoAccessibility : AccessibilityService() {
             return
         }
         //页面滑动事件不处理
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED ) {
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
             return
         }
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
@@ -191,7 +193,7 @@ class WuTiaoAccessibility : AccessibilityService() {
             //为确保点击换一篇后引发的TYPE_WINDOW_CONTENT_CHANGED小于 minClickChangeCount
             //而不能自动点击下一篇的问题
             handler?.sendMessageDelayed(
-                handler?.obtainMessage(nextDelayCheck, visitCount, 0)
+                handler?.obtainMessage(nextDelayCheck, visitCount, visitCount)
                 , normalNextTime - 1000
             )
             recheckVote = false
@@ -203,7 +205,7 @@ class WuTiaoAccessibility : AccessibilityService() {
         val voteNode = rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.kingnet.fiveline:id/" + "voteBtn")
         if (!voteNode.isEmpty()) {
             handler?.sendMessageDelayed(
-                handler?.obtainMessage(codeFinder, currentContentCode, 0, voteNode[0])
+                handler?.obtainMessage(codeFinder, currentContentCode, visitCount, voteNode[0])
                 , delay
             )
         }
@@ -215,7 +217,7 @@ class WuTiaoAccessibility : AccessibilityService() {
             rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.kingnet.fiveline:id/" + "mLayoutNext")
         if (!nextNodes.isEmpty()) {
             handler?.sendMessageDelayed(
-                handler?.obtainMessage(codeNext, currentContentCode, 0, nextNodes[0])
+                handler?.obtainMessage(codeNext, currentContentCode, visitCount, nextNodes[0])
                 , delay
             )
         }
@@ -238,7 +240,9 @@ class WuTiaoAccessibility : AccessibilityService() {
 
         //内容时间显示的节点
         var node = nodeInfo.findAccessibilityNodeInfosByViewId("com.kingnet.fiveline:id/" + "tvDate")
+        isVideo = true
         if (node.isEmpty()) {
+            isVideo = false
             node = nodeInfo.findAccessibilityNodeInfosByViewId("com.kingnet.fiveline:id/" + "mTextConsultTime")
         }
         if (!node.isEmpty()) {
@@ -275,7 +279,12 @@ class WuTiaoAccessibility : AccessibilityService() {
                 }
             }
             val time = sb.toString().toInt()
-            if (time <= voteTime) {
+            val targetTime = if (isVideo) {
+                videoVoteTime
+            } else {
+                voteTime
+            }
+            if (time <= targetTime) {
                 needVoteClick = true
             }
         }
@@ -303,8 +312,13 @@ class WuTiaoAccessibility : AccessibilityService() {
                 callBack?.onHandlerCall(nextDelayCheck, msg.arg1)
             } else if (msg?.obj != null) {
                 val node = msg.obj as AccessibilityNodeInfo
-                if (msg.arg1 == currentContentCode)
+                if (msg.arg1 == currentContentCode) {
+                    //防止上一次的延迟投票提醒在点击下一篇后出现时引发的投票错误
+                    if (msg.what == codeFinder && msg.arg2 != 0 && msg.arg2 != visitCount) {
+                        return
+                    }
                     node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                }
             }
         }
     }
